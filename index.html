@@ -239,7 +239,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:rgba(200,184,154,.06
 
 <script>
 let TOKEN='',PROXY='',DATA=null,CI={};
-let SORT_COL=7,SORT_DIR=-1;
+let SORT_COL=3,SORT_DIR=-1; // default: sort by views desc
 
 const fR  = n=>n?'₽'+Math.round(n).toLocaleString('ru'):'—';
 const fR1 = n=>n?'₽'+(+n).toFixed(1):'—';
@@ -544,10 +544,17 @@ function rCharts(camps,day_map){
     datasets:[{data:t8s.map(c=>Math.round(c.s.spend)),backgroundColor:'rgba(42,37,32,.7)',borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
       plugins:{legend:{display:false},
-        datalabels:{display:true,anchor:'end',align:'end',color:'#5c5650',font:{size:9,family:'Comfortaa'},
-          formatter:v=>'₽'+Math.round(v).toLocaleString('ru')}},
+        tooltip:{callbacks:{label:ctx=>'₽'+Math.round(ctx.raw).toLocaleString('ru')}}},
       scales:{x:{ticks:{...co,callback:v=>'₽'+Math.round(v).toLocaleString('ru')},grid:{color:gr}},
-        y:{ticks:co,grid:{display:false}}}}});
+        y:{ticks:co,grid:{display:false}}},
+      animation:{onComplete:function(){
+        const ctx=this.ctx,ds=this.data.datasets[0];
+        this.getDatasetMeta(0).data.forEach((bar,i)=>{
+          const v=ds.data[i];if(!v)return;
+          ctx.fillStyle='#5c5650';ctx.font='9px Comfortaa';ctx.textAlign='left';ctx.textBaseline='middle';
+          ctx.fillText('₽'+Math.round(v).toLocaleString('ru'),bar.x+4,bar.y);
+        });
+      }}}});
 
   // CTR bar + data labels
   const t8c=[...ws].sort((a,b)=>b.s.ctr-a.s.ctr).slice(0,8);
@@ -558,11 +565,18 @@ function rCharts(camps,day_map){
       backgroundColor:t8c.map(c=>c.s.ctr>=4?'rgba(122,158,135,.8)':c.s.ctr>=2?'rgba(196,154,60,.8)':'rgba(201,123,106,.7)'),
       borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},
-        datalabels:{display:true,anchor:'end',align:'top',color:'#5c5650',font:{size:9,family:'Comfortaa'},
-          formatter:v=>v.toFixed(2)+'%'}},
+      plugins:{legend:{display:false}},
       scales:{x:{ticks:{...co,maxRotation:35},grid:{display:false}},
-        y:{ticks:{...co,callback:v=>v+'%'},grid:{color:gr}}}}});
+        y:{ticks:{...co,callback:v=>v+'%'},grid:{color:gr}}},
+      animation:{onComplete:function(){
+        const ctx=this.ctx,ds=this.data.datasets[0];
+        this.getDatasetMeta(0).data.forEach((bar,i)=>{
+          const v=ds.data[i];if(!v)return;
+          const lbl=v.toFixed(2)+'%';
+          ctx.fillStyle='#5c5650';ctx.font='bold 9px Comfortaa';ctx.textAlign='center';ctx.textBaseline='bottom';
+          ctx.fillText(lbl,bar.x,bar.y-2);
+        });
+      }}}});
 
   const dk=Object.keys(day_map).sort();
   const fmt=d=>{const t=new Date(d);return t.getDate()+'.'+(t.getMonth()+1);};
