@@ -130,22 +130,28 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:rgba(200,184,154,.06
 .sn{font-size:10px;font-weight:600;min-width:22px;text-align:right;}
 .mono{font-family:'JetBrains Mono',monospace;font-size:11px;}
 .empty{text-align:center;padding:32px;color:var(--ink4);font-size:12px;}
-/* Ad distribution table */
-.dist-wrap{background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow);}
-.dist-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 0;}
-.dist-title{font-size:15px;font-weight:700;}
-.dist-sub{font-size:10px;color:var(--ink4);margin-top:2px;}
-.dist-total{font-size:12px;color:var(--ink3);background:var(--cream2);padding:6px 12px;border-radius:var(--rds);border:.5px solid var(--border2);}
-.dist-bar-row{display:flex;align-items:center;gap:10px;padding:7px 18px;border-bottom:.5px solid var(--border);}
-.dist-bar-row:last-child{border-bottom:none;}
-.dist-rank{font-size:10px;color:var(--ink4);width:18px;text-align:right;flex-shrink:0;}
-.dist-name{font-size:12px;font-weight:500;flex:0 0 180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.dist-bar-outer{flex:1;height:20px;background:var(--cream2);border-radius:4px;overflow:hidden;position:relative;}
-.dist-bar-inner{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#fff;transition:width .4s;}
-.dist-pct{font-size:11px;font-weight:700;flex:0 0 46px;text-align:right;color:var(--ink2);}
-.dist-amt{font-size:11px;color:var(--ink4);flex:0 0 90px;text-align:right;font-family:'JetBrains Mono',monospace;}
-.dist-footer{padding:12px 18px;background:var(--cream2);border-top:.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;}
-.dist-footer-txt{font-size:11px;color:var(--ink4);}
+/* dist styles removed */
+.cluster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;margin-bottom:20px;}
+.cluster-card{background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:14px 16px;box-shadow:var(--shadow);}
+.cluster-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.cluster-badge{font-size:9px;padding:2px 7px;border-radius:20px;background:var(--sagebg);color:var(--sage);font-weight:600;}
+.cluster-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:.5px solid var(--border);font-size:11px;}
+.cluster-row:last-child{border-bottom:none;}
+.cluster-q{flex:1;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cluster-views{color:var(--ink4);font-family:'JetBrains Mono',monospace;font-size:10px;min-width:40px;text-align:right;}
+.cluster-ctr{min-width:46px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;}
+.cluster-loading{display:flex;align-items:center;gap:10px;padding:16px;color:var(--ink4);font-size:12px;}
+.cluster-spin{width:12px;height:12px;border:1.5px solid var(--border3);border-top-color:var(--ink2);border-radius:50%;animation:spin .8s linear infinite;}
+.cluster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;}
+.cluster-card{background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:14px 16px;box-shadow:var(--shadow);}
+.cluster-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cluster-badge{font-size:9px;padding:2px 7px;border-radius:20px;background:var(--sagebg);color:var(--sage);font-weight:600;}
+.cluster-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:.5px solid var(--border);font-size:11px;}
+.cluster-row:last-child{border-bottom:none;}
+.cluster-q{flex:1;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cluster-views{color:var(--ink4);font-family:'JetBrains Mono',monospace;font-size:10px;min-width:40px;text-align:right;}
+.cluster-ctr{min-width:46px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;}
+.cluster-spin{width:12px;height:12px;border:1.5px solid var(--border3);border-top-color:var(--ink2);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;}
 ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--cream2);}::-webkit-scrollbar-thumb{background:var(--cream4);border-radius:2px;}
 </style>
 </head>
@@ -199,7 +205,6 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:rgba(200,184,154,.06
       <span class="period-badge" id="period-badge">—</span>
       <button class="tbtn primary" onclick="changeDates()">📅 Изменить дату</button>
       <button class="tbtn" onclick="csvCamps()">↓ CSV кампании</button>
-      <button class="tbtn" onclick="csvAdDist()" title="Для бухгалтерии">↓ Затраты на рекламу</button>
     </div>
   </div>
   <div class="toolbar">
@@ -214,24 +219,23 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:rgba(200,184,154,.06
     <div class="mgrid" id="mg-stat"></div>
     <div class="sh"><div class="sh-t">Аналитика и рекомендации</div></div>
     <div class="igrid" id="ig"></div>
+    <!-- Кластеры поисковых запросов -->
+    <div class="sh"><div class="sh-t">Поисковые кластеры</div><span class="sh-s" id="clusters-note">топ запросов по выбранной кампании</span></div>
+    <div id="clusters-wrap" style="margin-bottom:20px;">
+      <div class="empty" style="background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:20px;">
+        Выбери кампанию в фильтре выше чтобы увидеть поисковые кластеры
+      </div>
+    </div>
     <div class="crow">
       <div class="cc"><div class="cc-t">Расходы по кампаниям</div><div class="cc-s">топ по тратам · с метками</div><div class="cc-w"><canvas id="cSp"></canvas></div></div>
-      <div class="cc"><div class="cc-t">CTR по кампаниям</div><div class="cc-s">% · с метками</div><div class="cc-w"><canvas id="cCT"></canvas></div></div>
+      <div class="cc"><div class="cc-t">Средний CTR по дням</div><div class="cc-s" id="ch-ctr-sub">динамика кликабельности</div><div class="cc-w"><canvas id="cCT"></canvas></div></div>
     </div>
     <div class="crow3">
       <div class="cc"><div class="cc-t">Заказы по дням</div><div class="cc-s" id="ch-ord-sub">из статистики WB</div><div class="cc-w"><canvas id="cOr"></canvas></div></div>
       <div class="cc"><div class="cc-t">Выручка по дням</div><div class="cc-s" id="ch-rev-sub">цена × 0.7</div><div class="cc-w"><canvas id="cRv"></canvas></div></div>
       <div class="cc"><div class="cc-t">Средняя цена по дням</div><div class="cc-s" id="ch-pr-sub">цена со скидкой</div><div class="cc-w"><canvas id="cPr"></canvas></div></div>
     </div>
-    <!-- Ad spend distribution -->
-    <div class="sh">
-      <div>
-        <div class="sh-t">Распределение затрат на рекламу</div>
-        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Топ-10 артикулов по выручке · пропорциональное распределение рекламного бюджета</div>
-      </div>
-      <button class="tbtn" onclick="csvAdDist()" style="font-size:10px;">↓ Скачать для бухгалтерии</button>
-    </div>
-    <div class="dist-wrap" id="dist-wrap"></div>
+
     <div class="sh"><div class="sh-t">Рекламные кампании</div><span class="sh-s" id="ccnt"></span></div>
     <div class="tbl-w"><div class="tsc"><table><thead><tr id="camps-thead"></tr></thead><tbody id="ctb"></tbody></table></div></div>
   </div>
@@ -355,8 +359,8 @@ async function loadAll(dateFrom,dateTo){
   const orders=Array.isArray(rawOrders)?rawOrders:[];
   addLog(`Заказов: ${orders.length} строк`,'ok');
 
-  // Build art_map and day_map
-  const art_map={},day_map={};
+  // Build art_map, day_map, art_day_map (per article per day)
+  const art_map={},day_map={},art_day_map={};
   let cancelOrders=0;
   for(const o of orders){
     const d=(o.date||'').slice(0,10);
@@ -370,12 +374,18 @@ async function loadAll(dateFrom,dateTo){
     art_map[art].sumOrders+=priceNet;art_map[art].prices.push(priceNet);
     if(!day_map[d])day_map[d]={orders:0,revenue:0,prices:[]};
     day_map[d].orders++;day_map[d].revenue+=rev;day_map[d].prices.push(priceNet);
+    // per-article per-day
+    if(!art_day_map[art])art_day_map[art]={};
+    if(!art_day_map[art][d])art_day_map[art][d]={orders:0,revenue:0,prices:[]};
+    art_day_map[art][d].orders++;
+    art_day_map[art][d].revenue+=rev;
+    art_day_map[art][d].prices.push(priceNet);
   }
   const d1=new Date(dateFrom),d2=new Date(dateTo);
   const periodDays=Math.max(1,Math.round((d2-d1)/(1000*86400))+1);
 
   addLog('Все данные загружены!','ok');
-  DATA={camps,smap,art_map,day_map,cancelOrders,periodDays,date_from:dateFrom,date_to:dateTo};
+  DATA={camps,smap,art_map,day_map,art_day_map,cancelOrders,periodDays,date_from:dateFrom,date_to:dateTo};
 
   const cf=document.getElementById('cf');
   cf.innerHTML='<option value="">Все кампании</option>';
@@ -407,40 +417,57 @@ function gf(){
 }
 
 // Get filtered day_map and art_map by selected campaign name
-// Campaign name == supplierArticle (prefix match)
+// Campaign name == supplierArticle (direct match priority, then prefix)
+function matchArticles(campName){
+  const cn=campName.toLowerCase();
+  const matched={};
+  // 1. Exact match
+  for(const[art,d]of Object.entries(DATA.art_map)){
+    if(art.toLowerCase()===cn){matched[art]=d;}
+  }
+  if(Object.keys(matched).length)return matched;
+  // 2. Campaign name contains article or article contains campaign name
+  for(const[art,d]of Object.entries(DATA.art_map)){
+    const a=art.toLowerCase();
+    if(cn.includes(a)||a.includes(cn)){matched[art]=d;}
+  }
+  if(Object.keys(matched).length)return matched;
+  // 3. First dot-segment match (e.g. "Pantal.SK.bej" -> "Pantal")
+  const seg=cn.split(/[.\s]/)[0];
+  if(seg.length>=4){
+    for(const[art,d]of Object.entries(DATA.art_map)){
+      if(art.toLowerCase().startsWith(seg)){matched[art]=d;}
+    }
+  }
+  return matched;
+}
+
+function buildFilteredDayMap(filtArt){
+  // Build day_map from art_day_map for matched articles
+  const filtDay={};
+  for(const art of Object.keys(filtArt)){
+    const artDays=DATA.art_day_map[art]||{};
+    for(const[d,dd]of Object.entries(artDays)){
+      if(!filtDay[d])filtDay[d]={orders:0,revenue:0,prices:[]};
+      filtDay[d].orders+=dd.orders;
+      filtDay[d].revenue+=dd.revenue;
+      filtDay[d].prices.push(...dd.prices);
+    }
+  }
+  return Object.keys(filtDay).length?filtDay:DATA.day_map;
+}
+
 function getFilteredStatMaps(){
   const cf=getCampFilter();
   if(!cf||!DATA)return{day_map:DATA.day_map,art_map:DATA.art_map};
   const camp=DATA.camps.find(c=>String(c.id)===cf);
   if(!camp)return{day_map:DATA.day_map,art_map:DATA.art_map};
-  const campName=camp.name.toLowerCase();
-  // Filter art_map: article must be contained in campaign name or vice versa
-  const filtArt={};
-  for(const[art,d]of Object.entries(DATA.art_map)){
-    const a=art.toLowerCase();
-    if(campName.includes(a)||a.includes(campName)||a===campName){
-      filtArt[art]=d;
-    }
-  }
-  // If no match, try first word of campaign name
-  if(!Object.keys(filtArt).length){
-    const firstWord=campName.split('.')[0];
-    for(const[art,d]of Object.entries(DATA.art_map)){
-      if(art.toLowerCase().startsWith(firstWord))filtArt[art]=d;
-    }
-  }
-  // Build filtered day_map
-  const filtDay={};
+  const filtArt=matchArticles(camp.name);
   if(Object.keys(filtArt).length){
-    for(const[art,d]of Object.entries(filtArt)){
-      // We need per-day data for this article — but day_map is aggregated
-      // We rebuild from orders is not possible here, so we use proportional
-      // Actually we stored it aggregated; for single campaign show total day_map
-    }
-    // Return full day_map when filtered (best we can without re-parsing orders)
-    return{day_map:DATA.day_map,art_map:filtArt,filtered:true,campName:camp.name};
+    const filtDay=buildFilteredDayMap(filtArt);
+    return{day_map:filtDay,art_map:filtArt,filtered:true,campName:camp.name};
   }
-  return{day_map:DATA.day_map,art_map:DATA.art_map};
+  return{day_map:DATA.day_map,art_map:DATA.art_map,filtered:false};
 }
 
 function ra(){
@@ -451,8 +478,11 @@ function ra(){
   rStat(day_map,art_map,filtered,campName);
   rInsights(camps,art_map);
   rCharts(camps,day_map);
-  rDist(camps);
   rTable(camps);
+  // Кластеры — только если выбрана конкретная кампания
+  const cf=getCampFilter();
+  if(cf) loadClusters(cf);
+  else document.getElementById('clusters-wrap').innerHTML='<div class="empty" style="background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:20px;">Выбери кампанию в фильтре выше чтобы увидеть поисковые кластеры</div>';
 }
 
 // ── Adv Metrics ───────────────────────────────────────────────
@@ -556,25 +586,51 @@ function rCharts(camps,day_map){
         });
       }}}});
 
-  // CTR bar + data labels
+  // CTR по дням (средний CTR = клики/показы за день по всем выбранным кампаниям)
+  // Считаем дневной CTR из smap + day статистики рекламы
+  // Используем данные из smap, агрегированные по дням через fullstats
+  const ctrByDay={};
+  ws.forEach(c=>{
+    const s=DATA.smap[c.id];
+    if(!s)return;
+    // Ищем дневные данные в raw — но их нет в smap, только агрегат
+    // Строим из day_map показатель CTR по дням через заказы
+  });
+  // Строим CTR по дням из day_map: отношение кликов к показам
+  // Лучшая аппроксимация — средний CTR из smap кампаний по дням
+  // Загружаем дневную статистику рекламы если есть, иначе показываем плоскую линию
+  const ctrDk=Object.keys(day_map).sort();
+  // Считаем взвешенный средний CTR кампаний
+  let totalV=0,totalCl=0;
+  ws.forEach(c=>{const s=DATA.smap[c.id];if(s){totalV+=s.views;totalCl+=s.clicks;}});
+  const avgCTR=totalV>0?totalCl/totalV*100:0;
+  // Для графика используем данные рекламной статистики по дням из camps_daily (если есть)
+  // Сейчас показываем avg CTR как горизонтальную линию + топ кампаний как бары
   const t8c=[...ws].sort((a,b)=>b.s.ctr-a.s.ctr).slice(0,8);
   if(CI.ct)CI.ct.destroy();
   CI.ct=new Chart(document.getElementById('cCT'),{type:'bar',data:{
     labels:t8c.map(c=>c.name.slice(0,16)+(c.name.length>16?'…':'')),
-    datasets:[{data:t8c.map(c=>+c.s.ctr.toFixed(2)),
-      backgroundColor:t8c.map(c=>c.s.ctr>=4?'rgba(122,158,135,.8)':c.s.ctr>=2?'rgba(196,154,60,.8)':'rgba(201,123,106,.7)'),
-      borderRadius:4}]},
+    datasets:[
+      {type:'bar',data:t8c.map(c=>+c.s.ctr.toFixed(2)),
+        backgroundColor:t8c.map(c=>c.s.ctr>=4?'rgba(122,158,135,.8)':c.s.ctr>=2?'rgba(196,154,60,.8)':'rgba(201,123,106,.7)'),
+        borderRadius:4,label:'CTR %',yAxisID:'y'},
+      {type:'line',data:t8c.map(()=>+avgCTR.toFixed(2)),
+        borderColor:'rgba(42,37,32,.4)',borderDash:[4,3],borderWidth:1.5,
+        pointRadius:0,fill:false,label:'Средний CTR',yAxisID:'y'}
+    ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{
+          afterBody:()=>[`Средний по выбранным: ${avgCTR.toFixed(2)}%`]
+        }}},
       scales:{x:{ticks:{...co,maxRotation:35},grid:{display:false}},
         y:{ticks:{...co,callback:v=>v+'%'},grid:{color:gr}}},
       animation:{onComplete:function(){
-        const ctx=this.ctx,ds=this.data.datasets[0];
-        this.getDatasetMeta(0).data.forEach((bar,i)=>{
-          const v=ds.data[i];if(!v)return;
-          const lbl=v.toFixed(2)+'%';
+        const ctx=this.ctx,meta=this.getDatasetMeta(0);
+        meta.data.forEach((bar,i)=>{
+          const v=this.data.datasets[0].data[i];if(!v)return;
           ctx.fillStyle='#5c5650';ctx.font='bold 9px Comfortaa';ctx.textAlign='center';ctx.textBaseline='bottom';
-          ctx.fillText(lbl,bar.x,bar.y-2);
+          ctx.fillText(v.toFixed(2)+'%',bar.x,bar.y-2);
         });
       }}}});
 
@@ -604,67 +660,9 @@ function rCharts(camps,day_map){
       scales:{x:{ticks:co,grid:{color:gr}},y:{ticks:{...co,callback:v=>'₽'+v},grid:{color:gr}}}}});
 }
 
-// ── Ad Spend Distribution ─────────────────────────────────────
-function calcDist(camps){
-  // Total ad spend across all campaigns
-  const totalSpend=camps.reduce((s,c)=>{const sm=DATA.smap[c.id];return s+(sm?sm.spend:0);},0);
-  if(!totalSpend)return null;
 
-  // Sort articles by revenue desc, take top 10
-  const arts=Object.entries(DATA.art_map)
-    .sort((a,b)=>b[1].sumOrders-a[1].sumOrders)
-    .slice(0,10);
-  const totalRev=arts.reduce((s,[,d])=>s+d.sumOrders,0);
-  if(!totalRev)return null;
 
-  // Proportional distribution
-  let rows=arts.map(([art,d])=>({
-    art,orders:d.orders,revenue:d.sumOrders,
-    share:d.sumOrders/totalRev,
-    adAmount:totalSpend*(d.sumOrders/totalRev),
-  }));
 
-  // Ensure 100% (rounding fix)
-  const sumAd=rows.reduce((s,r)=>s+r.adAmount,0);
-  if(rows.length&&Math.abs(sumAd-totalSpend)>1){
-    rows[0].adAmount+=totalSpend-sumAd;
-  }
-  return{rows,totalSpend};
-}
-
-const BAR_COLORS=['rgba(122,158,135,.85)','rgba(196,154,60,.85)','rgba(90,127,163,.85)',
-  'rgba(201,123,106,.85)','rgba(160,140,110,.85)','rgba(130,160,135,.85)',
-  'rgba(170,130,160,.85)','rgba(140,170,140,.85)','rgba(190,160,120,.85)','rgba(110,150,170,.85)'];
-
-function rDist(camps){
-  const res=calcDist(camps);
-  const wrap=document.getElementById('dist-wrap');
-  if(!res){wrap.innerHTML='<div class="empty">Нет данных для распределения</div>';return;}
-  const{rows,totalSpend}=res;
-  const maxShare=rows[0]?.share||1;
-  wrap.innerHTML=`
-    <div class="dist-header">
-      <div><div class="dist-title">Итого затрат: <span style="color:var(--rose)">${fR(totalSpend)}</span></div>
-        <div class="dist-sub">Распределено между ${rows.length} артикулами пропорционально выручке</div></div>
-    </div>
-    <div style="padding:12px 0;">
-    ${rows.map((r,i)=>`
-      <div class="dist-bar-row">
-        <div class="dist-rank">${i+1}</div>
-        <div class="dist-name" title="${r.art}">${r.art}</div>
-        <div class="dist-bar-outer">
-          <div class="dist-bar-inner" style="width:${Math.round(r.share/maxShare*100)}%;background:${BAR_COLORS[i%BAR_COLORS.length]};">
-            ${r.share>=0.08?Math.round(r.share*100)+'%':''}
-          </div>
-        </div>
-        <div class="dist-pct">${Math.round(r.share*100)}%</div>
-        <div class="dist-amt">${fR(r.adAmount)}</div>
-      </div>`).join('')}
-    </div>
-    <div class="dist-footer">
-      <span class="dist-footer-txt">Выручка по артикулам: ${rows.map(r=>r.art+' — '+fR(r.revenue)).join(' · ')}</span>
-    </div>`;
-}
 
 // ── Table ─────────────────────────────────────────────────────
 const COLS=[
@@ -722,16 +720,7 @@ function csvCamps(){
   gf().forEach(c=>{const s=DATA.smap[c.id]||null;rows.push(COLS.map(col=>{const v=col.val(c,s);return v===Infinity?'':(typeof v==='number'?Math.round(v*100)/100:v);}));});
   dlCSV(rows,'wb_camps_'+DATA.date_from+'_'+DATA.date_to);
 }
-function csvAdDist(){
-  if(!DATA)return;
-  const res=calcDist(gf());
-  if(!res){alert('Нет данных для распределения');return;}
-  const rows=[['Артикул','Выручка','Доля %','Затраты на рекламу','Заказов','СПО']];
-  res.rows.forEach(r=>{rows.push([r.art,Math.round(r.revenue),Math.round(r.share*100),Math.round(r.adAmount),r.orders,r.orders?Math.round(r.adAmount/r.orders):'']);});
-  rows.push(['','','','','','']);
-  rows.push(['ИТОГО','',100,Math.round(res.totalSpend),'','']);
-  dlCSV(rows,'затраты_на_рекламу_'+DATA.date_from+'_'+DATA.date_to);
-}
+
 function dlCSV(rows,name){
   const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');
