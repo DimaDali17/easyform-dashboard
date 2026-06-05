@@ -264,7 +264,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 async function wbFetch(url,method='GET',body=null){
   const u=PROXY+'?url='+encodeURIComponent(url);
   const opts={method,headers:{'Content-Type':'application/json','X-WB-Token':TOKEN}};
-  if(body)opts.body=JSON.stringify(body);
+  if(body!==null&&body!==undefined)opts.body=JSON.stringify(body);
   const r=await fetch(u,opts);
   if(r.status===429){
     const w=parseInt(r.headers.get('X-Ratelimit-Retry')||'10');
@@ -348,8 +348,19 @@ async function loadAll(dateFrom,dateTo){
     const sd=await wbFetch(ADV+`/adv/v3/fullstats?ids=${camps.slice(i,i+50).map(c=>c.id).join(',')}&beginDate=${dateFrom}&endDate=${dateTo}`);
     for(const s of(Array.isArray(sd)?sd:(sd.data||[]))){
       let v=0,cl=0,sp=0,or=0;
-      for(const d of(s.days||[])){v+=d.views||0;cl+=d.clicks||0;sp+=d.sum||0;or+=d.orders||0;}
-      smap[s.advertId||s.id]={views:v,clicks:cl,spend:sp,orders:or,ctr:v?cl/v*100:0,cpc:cl?sp/cl:0,cr:cl?or/cl*100:0};
+      const ddays={};
+      for(const d of(s.days||[])){
+        v+=d.views||0;cl+=d.clicks||0;sp+=d.sum||0;or+=d.orders||0;
+        const dk=(d.date||'').slice(0,10);
+        if(dk){
+          if(!ddays[dk])ddays[dk]={views:0,clicks:0};
+          ddays[dk].views+=d.views||0;
+          ddays[dk].clicks+=d.clicks||0;
+        }
+      }
+      const cid=s.advertId||s.id;
+      smap[cid]={views:v,clicks:cl,spend:sp,orders:or,
+        ctr:v?cl/v*100:0,cpc:cl?sp/cl:0,cr:cl?or/cl*100:0,days:ddays};
     }
   }
   addLog(`Статистика: ${Object.keys(smap).length} кампаний`,'ok');
@@ -385,7 +396,16 @@ async function loadAll(dateFrom,dateTo){
   const periodDays=Math.max(1,Math.round((d2-d1)/(1000*86400))+1);
 
   addLog('Все данные загружены!','ok');
-  DATA={camps,smap,art_map,day_map,art_day_map,cancelOrders,periodDays,date_from:dateFrom,date_to:dateTo};
+  // Build aggregate daily ad stats from smap.days
+  const adv_day_map={};
+  for(const[cid,s]of Object.entries(smap)){
+    for(const[d,dd]of Object.entries(s.days||{})){
+      if(!adv_day_map[d])adv_day_map[d]={views:0,clicks:0};
+      adv_day_map[d].views+=dd.views||0;
+      adv_day_map[d].clicks+=dd.clicks||0;
+    }
+  }
+  DATA={camps,smap,adv_day_map,art_map,day_map,art_day_map,cancelOrders,periodDays,date_from:dateFrom,date_to:dateTo};
 
   const cf=document.getElementById('cf');
   cf.innerHTML='<option value="">Все кампании</option>';
@@ -586,54 +606,43 @@ function rCharts(camps,day_map){
         });
       }}}});
 
-  // CTR по дням (средний CTR = клики/показы за день по всем выбранным кампаниям)
-  // Считаем дневной CTR из smap + day статистики рекламы
-  // Используем данные из smap, агрегированные по дням через fullstats
-  const ctrByDay={};
-  ws.forEach(c=>{
-    const s=DATA.smap[c.id];
-    if(!s)return;
-    // Ищем дневные данные в raw — но их нет в smap, только агрегат
-    // Строим из day_map показатель CTR по дням через заказы
+  // CTR по дням — линейный график из дневной рекламной статистики
+  const campIds=new Set(camps.map(c=>String(c.id)));
+  const campDayMap={};
+  for(const[cid,s]of Object.entries(DATA.smap)){
+    if(!campIds.has(String(cid)))continue;
+    for(const[d,dd]of Object.entries(s.days||{})){
+      if(!campDayMap[d])campDayMap[d]={views:0,clicks:0};
+      campDayMap[d].views+=dd.views||0;
+      campDayMap[d].clicks+=dd.clicks||0;
+    }
+  }
+  const ctrDk=Object.keys(campDayMap).sort();
+  const ctrVals=ctrDk.map(d=>{
+    const dd=campDayMap[d];
+    return dd.views>0?+(dd.clicks/dd.views*100).toFixed(2):0;
   });
-  // Строим CTR по дням из day_map: отношение кликов к показам
-  // Лучшая аппроксимация — средний CTR из smap кампаний по дням
-  // Загружаем дневную статистику рекламы если есть, иначе показываем плоскую линию
-  const ctrDk=Object.keys(day_map).sort();
-  // Считаем взвешенный средний CTR кампаний
-  let totalV=0,totalCl=0;
-  ws.forEach(c=>{const s=DATA.smap[c.id];if(s){totalV+=s.views;totalCl+=s.clicks;}});
-  const avgCTR=totalV>0?totalCl/totalV*100:0;
-  // Для графика используем данные рекламной статистики по дням из camps_daily (если есть)
-  // Сейчас показываем avg CTR как горизонтальную линию + топ кампаний как бары
-  const t8c=[...ws].sort((a,b)=>b.s.ctr-a.s.ctr).slice(0,8);
   if(CI.ct)CI.ct.destroy();
-  CI.ct=new Chart(document.getElementById('cCT'),{type:'bar',data:{
-    labels:t8c.map(c=>c.name.slice(0,16)+(c.name.length>16?'…':'')),
-    datasets:[
-      {type:'bar',data:t8c.map(c=>+c.s.ctr.toFixed(2)),
+  if(ctrDk.length>0){
+    CI.ct=new Chart(document.getElementById('cCT'),{type:'line',data:{
+      labels:ctrDk.map(fmt),
+      datasets:[{data:ctrVals,
+        borderColor:'rgba(196,154,60,1)',backgroundColor:'rgba(196,154,60,.1)',
+        tension:.3,pointRadius:3,fill:true,
+        pointBackgroundColor:ctrVals.map(v=>v>=4?'rgba(122,158,135,1)':v>=2?'rgba(196,154,60,1)':'rgba(201,123,106,1)')}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw.toFixed(2)+'%'}}},
+        scales:{x:{ticks:co,grid:{color:gr}},y:{ticks:{...co,callback:v=>v+'%'},grid:{color:gr},suggestedMin:0}}}});
+  } else {
+    const t8c=[...ws].sort((a,b)=>b.s.ctr-a.s.ctr).slice(0,8);
+    CI.ct=new Chart(document.getElementById('cCT'),{type:'bar',data:{
+      labels:t8c.map(c=>c.name.slice(0,16)+(c.name.length>16?'…':'')),
+      datasets:[{data:t8c.map(c=>+c.s.ctr.toFixed(2)),
         backgroundColor:t8c.map(c=>c.s.ctr>=4?'rgba(122,158,135,.8)':c.s.ctr>=2?'rgba(196,154,60,.8)':'rgba(201,123,106,.7)'),
-        borderRadius:4,label:'CTR %',yAxisID:'y'},
-      {type:'line',data:t8c.map(()=>+avgCTR.toFixed(2)),
-        borderColor:'rgba(42,37,32,.4)',borderDash:[4,3],borderWidth:1.5,
-        pointRadius:0,fill:false,label:'Средний CTR',yAxisID:'y'}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},
-        tooltip:{callbacks:{
-          afterBody:()=>[`Средний по выбранным: ${avgCTR.toFixed(2)}%`]
-        }}},
-      scales:{x:{ticks:{...co,maxRotation:35},grid:{display:false}},
-        y:{ticks:{...co,callback:v=>v+'%'},grid:{color:gr}}},
-      animation:{onComplete:function(){
-        const ctx=this.ctx,meta=this.getDatasetMeta(0);
-        meta.data.forEach((bar,i)=>{
-          const v=this.data.datasets[0].data[i];if(!v)return;
-          ctx.fillStyle='#5c5650';ctx.font='bold 9px Comfortaa';ctx.textAlign='center';ctx.textBaseline='bottom';
-          ctx.fillText(v.toFixed(2)+'%',bar.x,bar.y-2);
-        });
-      }}}});
-
+        borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{...co,maxRotation:35},grid:{display:false}},y:{ticks:{...co,callback:v=>v+'%'},grid:{color:gr}}}}});
+  }
   const dk=Object.keys(day_map).sort();
   const fmt=d=>{const t=new Date(d);return t.getDate()+'.'+(t.getMonth()+1);};
 
@@ -711,6 +720,96 @@ function rTable(camps){
     const s=DATA.smap[c.id]||null;
     return`<tr>${COLS.map(col=>`<td class="${['views','clicks','ctr','cpc','spend','orders','cr','cpo','ddrr','score'].includes(col.k)?'mono':''}">${col.fmt(c,s)}</td>`).join('')}</tr>`;
   }).join('');
+}
+
+
+// ── Clusters ─────────────────────────────────────────────────
+async function loadClusters(campId){
+  const wrap=document.getElementById('clusters-wrap');
+  const camp=DATA.camps.find(c=>String(c.id)===String(campId));
+  if(!camp){
+    wrap.innerHTML='<div class="empty" style="background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:20px;">Выбери кампанию в фильтре</div>';
+    return;
+  }
+  wrap.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:16px;color:var(--ink4);font-size:12px;background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);"><div class="cluster-spin"></div>Загружаю поисковые запросы...</div>';
+  document.getElementById('clusters-note').textContent='кампания: '+camp.name;
+  try{
+    const ADV='https://advert-api.wildberries.ru';
+    // POST /adv/v0/normquery/list — список активных и неактивных кластеров
+    let clusterList=[];
+    try{
+      const r=await wbFetch(ADV+'/adv/v0/normquery/list','POST',[{id:Number(campId)}]);
+      if(Array.isArray(r)){
+        const cd=r.find(x=>String(x.id)===String(campId));
+        if(cd){
+          clusterList=[...(cd.active||[]),...(cd.inactive||[]),...(cd.clusters||[])];
+        } else if(r[0]&&(r[0].cluster||r[0].keyword)){
+          clusterList=r;
+        }
+      }
+    }catch(e){console.warn('normquery/list:',e.message);}
+
+    // Fallback: /adv/v1/normquery/stats с датами
+    if(!clusterList.length){
+      try{
+        const r2=await wbFetch(ADV+'/adv/v1/normquery/stats','POST',
+          [{id:Number(campId),dates:[DATA.date_from,DATA.date_to]}]);
+        if(Array.isArray(r2)){
+          const cd=r2.find(x=>String(x.id)===String(campId));
+          if(cd) clusterList=[...(cd.clusters||cd.keywords||[])];
+        }
+      }catch(e2){console.warn('normquery/stats:',e2.message);}
+    }
+
+    const keywords=clusterList.map(c=>({
+      keyword:c.cluster||c.keyword||c.phrase||c.name||'',
+      views:c.views||c.shows||0,
+      clicks:c.clicks||0,
+      ctr:c.ctr||(c.views>0?c.clicks/c.views*100:0),
+    })).filter(k=>k.keyword);
+
+    if(!keywords.length){
+      wrap.innerHTML=`<div class="empty" style="background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:20px;font-size:12px;color:var(--ink4);">
+        Кластеры не найдены для кампании #${campId}.<br>
+        <span style="font-size:10px;">Доступно для кампаний с поисковыми ставками по кластерам.</span></div>`;
+      return;
+    }
+
+    // Группируем по первым двум словам
+    const groups={};
+    keywords.forEach(kw=>{
+      const w=kw.keyword.toLowerCase();
+      const key=w.split(' ').slice(0,2).join(' ');
+      if(!groups[key])groups[key]={queries:[],views:0,clicks:0};
+      groups[key].queries.push(kw);
+      groups[key].views+=kw.views;
+      groups[key].clicks+=kw.clicks;
+    });
+
+    const sorted=Object.entries(groups)
+      .sort((a,b)=>b[1].views-a[1].views).slice(0,10);
+
+    wrap.innerHTML=`<div class="cluster-grid">${sorted.map(([cl,d])=>{
+      const ctr=d.views>0?d.clicks/d.views*100:0;
+      const topQ=[...d.queries].sort((a,b)=>b.views-a.views).slice(0,5);
+      return`<div class="cluster-card">
+        <div class="cluster-name">${cl}
+          <span class="cluster-badge">${d.queries.length} запр.</span>
+        </div>
+        <div style="font-size:10px;color:var(--ink4);margin-bottom:8px;">
+          ${fK(d.views)} показов · CTR ${ctr.toFixed(2)}%
+        </div>
+        ${topQ.map(q=>`<div class="cluster-row">
+          <span class="cluster-q" title="${q.keyword}">${q.keyword}</span>
+          <span class="cluster-views">${fK(q.views)}</span>
+          <span class="cluster-ctr" style="color:${q.ctr>=4?'var(--sage)':q.ctr>=2?'var(--amber)':'var(--rose)'}">${q.ctr.toFixed(1)}%</span>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}</div>`;
+
+  }catch(e){
+    wrap.innerHTML=`<div class="empty" style="background:rgba(255,252,248,.9);border:.5px solid var(--border2);border-radius:var(--rdl);padding:20px;color:var(--rose);">Ошибка: ${e.message}</div>`;
+  }
 }
 
 // ── CSV ───────────────────────────────────────────────────────
